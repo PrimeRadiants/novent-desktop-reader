@@ -6,45 +6,125 @@ const app = electron.app;
 // Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow;
 
+const dialog = electron.dialog;
+const fs = require('fs-extra');
+const path = require('path');
+const Menu = electron.Menu;
+
+
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
+var filePath = null;
+
+var template = [
+  {
+    label: 'File',
+    submenu: [
+	  {
+        label: 'Open',
+        accelerator: 'CmdOrCtrl+O',
+        click: function(item, focusedWindow) {
+          if (focusedWindow)
+            openNovent();
+        }
+      },
+      {
+        label: 'Reload',
+        accelerator: 'CmdOrCtrl+R',
+        click: function(item, focusedWindow) {
+          if (focusedWindow)
+            focusedWindow.reload();
+        }
+      },
+	  {
+        label: 'Close',
+        accelerator: 'CmdOrCtrl+W',
+        role: 'close'
+      }
+    ]
+  },
+  {
+    label: 'View',
+    submenu: [
+      {
+        label: 'Toggle Full Screen',
+        accelerator: (function() {
+          if (process.platform == 'darwin')
+            return 'Ctrl+Command+F';
+          else
+            return 'F11';
+        })(),
+        click: function(item, focusedWindow) {
+          if (focusedWindow)
+            focusedWindow.setFullScreen(!focusedWindow.isFullScreen());
+        }
+      }
+    ]
+  }
+];
+
+var menu = Menu.buildFromTemplate(template);
+Menu.setApplicationMenu(menu);
 
 function createWindow () {
-  // Create the browser window.
-  mainWindow = new BrowserWindow({width: 800, height: 600});
-
-  // and load the index.html of the app.
+	console.log(process.argv);
+  mainWindow = new BrowserWindow({width: 600, height: 800});
+  mainWindow.maximize();
   mainWindow.loadURL('file://' + __dirname + '/index.html');
+  
+  if(filePath == null)
+	openNoventFile();
+  else
+	readNovent();
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
-
-  // Emitted when the window is closed.
   mainWindow.on('closed', function() {
-    // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
-    // when you should delete the corresponding element.
-    mainWindow = null;
+	mainWindow = null;
   });
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
+function openNoventFile() {
+	//Open File dialog
+  dialog.showOpenDialog({properties: ['openFile'], filters: [{ name: 'Novent', extensions: ['novent'] }]}, function(filePaths) {
+	  
+	  //If no file selected, quit
+	  if(filePaths == undefined) {
+		  app.quit();
+		  return;
+	  }
+	  
+	  //Resolve file name without extension
+	  filePath = filePaths[0];
+	  readNovent();
+  });
+}
+
+function readNovent() {
+	var fileName = path.basename(filePath, ".novent");
+	  
+	  //Copy novent in Novent directory and rename it as a asar archive
+	  fs.copy(filePath, app.getPath("temp") + "/novents/" + fileName + ".novent", function (err) {
+		  if (err) return console.error(err);
+		  fs.rename( app.getPath("temp") + "/novents/" + fileName + ".novent",  app.getPath("temp") + "/novents/" + fileName + ".asar", function(err) {
+			  if (err) return console.error(err);
+			   mainWindow.loadURL('file://' + app.getPath("temp") + "/novents/" + fileName + ".asar" + '/novent.html');
+		  });
+	  })
+}
+
+app.on('open-file', function(e, path) {
+	e.preventDefault()
+	filePath = path;
+});
 app.on('ready', createWindow);
 
-// Quit when all windows are closed.
 app.on('window-all-closed', function () {
-  // On OS X it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
 app.on('activate', function () {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
   if (mainWindow === null) {
     createWindow();
   }
