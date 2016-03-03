@@ -16,7 +16,6 @@ const Menu = electron.Menu;
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
 var filePath = null;
-
 var template = [
   {
     label: 'File',
@@ -68,10 +67,12 @@ var menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
 
 function createWindow () {
-	console.log(process.argv);
   mainWindow = new BrowserWindow({width: 600, height: 800});
   mainWindow.maximize();
   mainWindow.loadURL('file://' + __dirname + '/index.html');
+
+  if(process.argv[1] != undefined)
+	 filePath = process.argv[1];
   
   if(filePath == null)
 	openNoventFile();
