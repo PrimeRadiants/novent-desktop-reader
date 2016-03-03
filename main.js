@@ -71,7 +71,7 @@ function createWindow () {
   mainWindow.maximize();
   mainWindow.loadURL('file://' + __dirname + '/index.html');
 
-  if(process.argv[1] != undefined)
+  if(process.argv[1] != "main.js")
 	 filePath = process.argv[1];
   
   if(filePath == null)
