@@ -71,7 +71,12 @@ function createWindow () {
   mainWindow.maximize();
   mainWindow.loadURL('file://' + __dirname + '/index.html');
 
-  if(process.argv[1] != "main.js")
+fs.writeFile(app.getPath("documents") + '/log.txt', JSON.stringify(process.argv), (err) => {
+  if (err) throw err;
+  console.log('It\'s saved!');
+});
+
+  if(filePath != null && path.extname(process.argv[1]) == ".novent")
 	 filePath = process.argv[1];
   
   if(filePath == null)
@@ -114,7 +119,7 @@ function readNovent() {
 }
 
 app.on('open-file', function(e, path) {
-	e.preventDefault()
+	e.preventDefault();
 	filePath = path;
 });
 app.on('ready', createWindow);
